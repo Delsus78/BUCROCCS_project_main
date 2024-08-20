@@ -125,7 +125,7 @@ def stop_udp():
 
 
 @app.route('/api/arduino/pump', methods=['POST'])
-def pump():
+async def pump():
     """
     Start the pump
     ---

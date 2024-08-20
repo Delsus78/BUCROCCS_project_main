@@ -20,7 +20,7 @@ def parse_line(line):
 def read_arduino_serial(serial_monitor):
     line = serial_monitor.readline().decode('utf-8').rstrip()
 
-    if 'DHT22' in line:  # 'DHT22' in line
+    if 'DHT22' in line or 'Initialized' in line:  # 'DHT22' in line
         print("[INIT] - {0}".format(line))
         line = read_arduino_serial(serial_monitor)
 
@@ -34,9 +34,8 @@ def transform_data_to_match_client_interpretation(data):
         # transform LIGHT data from 0-1023 to 0-100
         data[i]['LIGHT'] = str(int(int(data[i]['LIGHT']) * 100 / 1023))
 
-        # transform MOISTURE data from 300-1000 to 100-0
-        # data[i]['MOISTURE'] = str(100 - int((int(data[i]['MOISTURE']) - 300) * 100 / (1020 - 300)))
-        moisture_val = data[i]['MOISTURE']
+        # transform MOISTURE data from 0-1023 to 0-100
+        moisture_val = int(data[i]['MOISTURE'])
 
         data[i]['MOISTURE'] = \
             127 + (0.431 * moisture_val) + (-2.28 * pow(10, -3) * pow(moisture_val, 2)) \
@@ -50,6 +49,8 @@ def transform_data_to_match_client_interpretation(data):
         data[i]['LIGHT'] = float(data[i]['LIGHT'])
         data[i]['TEMPERATURE'] = float(data[i]['TEMPERATURE'])
         data[i]['HUMIDITY'] = float(data[i]['HUMIDITY'])
+        data[i]['PUMPSTATE'] = bool(data[i]['PUMPSTATE'])
+        data[i]['LIGHTSTATE'] = bool(data[i]['LIGHTSTATE'])
 
         # match with the actual hour as a key (i.e 12 : { 'MOISTURE': 100, 'LIGHT': 0 })
         response = {get_actual_hour(): data[i]}
