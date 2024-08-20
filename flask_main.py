@@ -1,16 +1,17 @@
+import asyncio
 import json
 import sys
 
 import flask
 from flasgger import Swagger
 from controllers.MainController import MainController
+from services.AutoReconnectService import AutoReconnectService
 from services.jsonschemas.SensorListSchema import validate_sensor_list
 
 app = flask.Flask(__name__)
 swagger = Swagger(app)
-controller = MainController(
-    server_ip='udpserver.bu.ac.th', server_port=5005, arduino_port=sys.argv[2] if len(sys.argv) > 2 else 'COM4')
-
+#controller = MainController(server_ip='udpserver.bu.ac.th', server_port=5005, arduino_port=sys.argv[2] if len(sys.argv) > 2 else 'COM4')
+controller = MainController(server_ip='udpserver.bu.ac.th', server_port=5005, arduino_port=sys.argv[2] if len(sys.argv) > 2 else None)
 
 @app.route('/')
 def index():
@@ -125,7 +126,7 @@ def stop_udp():
 
 
 @app.route('/api/arduino/pump', methods=['POST'])
-async def pump():
+def pump():
     """
     Start the pump
     ---
@@ -146,9 +147,24 @@ async def pump():
     start = flask.request.json.get('start')
     if controller.running:
         configs = controller.get_configuration_data()
-        await controller.start_pump(start, configs)
+        asyncio.run(controller.start_pump(start, configs))
         return 'Pump started'
     return 'Controller not started !'
+
+
+@app.route('/api/loginTointernet', methods=['POST'])
+def loginTointernet():
+    """
+    login to internet
+    ---
+    tags:
+      - API
+    responses:
+        200:
+            description: Logged in
+    """
+    asyncio.run(AutoReconnectService().login());
+    return 'Reconnected !'
 
 
 if __name__ == '__main__':

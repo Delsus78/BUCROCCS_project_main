@@ -15,8 +15,9 @@ FARM2000_PUMP_INTERVAL = 10
 
 
 class MainController:
-    def __init__(self, server_ip, server_port, arduino_port='COM4'):
-        self.model = ArduinoModel(port=arduino_port)
+    def __init__(self, server_ip, server_port, arduino_port=None):
+        if arduino_port:
+            self.model = ArduinoModel(port=arduino_port)
         self.view = ConsoleView()
         self.configurationsCheckerService = ConfigurationsCheckerService()
         self.autoReconnectService = AutoReconnectService()
