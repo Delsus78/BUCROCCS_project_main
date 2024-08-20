@@ -2,6 +2,7 @@ import asyncio
 
 from models.ArduinoModel import ArduinoModel
 from services.ArduinoHelpers import transform_data_to_match_client_interpretation
+from services.AutoReconnectService import AutoReconnectService
 from services.ConfigurationsCheckerService import ConfigurationsCheckerService
 from services.TimeHelpers import get_actual_hour, get_actual_day, get_actual_day_from_int
 from views.ConsoleView import ConsoleView
@@ -18,6 +19,7 @@ class MainController:
         self.model = ArduinoModel(port=arduino_port)
         self.view = ConsoleView()
         self.configurationsCheckerService = ConfigurationsCheckerService()
+        self.autoReconnectService = AutoReconnectService()
         self.udp_client = UdpClient(server_ip, server_port)
         self.loop = asyncio.get_event_loop()
         self.running = True
@@ -48,7 +50,8 @@ class MainController:
             actual_udp_data = await self.get_udp_server_data_of_the_day()
 
             if 'Error' in actual_udp_data.keys():
-                print("[ERROR] Error while retrieving data from UDP server, retrying...")
+                print("[ERROR] Error while retrieving data from UDP server, reconnection to internet...")
+                await self.autoReconnectService.login()
                 return
 
             if get_actual_hour() in actual_udp_data:
@@ -130,12 +133,13 @@ class MainController:
         data = await self.udp_client.retrieve_data(command="GET", id_str=FARM2000_CONFIGURATION, view=self.view)
 
         if 'Error' in data.keys():
-            print("[CONFIG] Error while retrieving data from UDP server, retrying...")
+            print("[CONFIG] Error while retrieving data from UDP server, reconnection to internet...")
+            await self.autoReconnectService.login()
             return
 
         if data and ('type' not in data.keys() or 'configuration_1.1' not in data.get('type')):
             print("[CONFIG] Wrong data retrieved from UDP server, got : ", data, ", retrying...")
-            return {}
+            data = None
 
         if not data:
             data = {
