@@ -31,12 +31,12 @@ class UdpClient:
             while max_try > 0:
                 try:
                     data = await asyncio.wait_for(self.loop.sock_recv(self.sock, 2048), timeout)
-                    dataStr = data.decode('utf-8')
+                    data_str = data.decode('utf-8')
 
                     if view:
-                        view.receive_message_from_udpserver(dataStr)
+                        view.receive_message_from_udpserver(data_str)
 
-                    return await self.checking_data(dataStr, command, id_str)
+                    return await self.checking_data(data_str, command, id_str)
                 except asyncio.TimeoutError:
                     print("[ERROR] Timeout while waiting for data from server.")
                     break
@@ -50,19 +50,20 @@ class UdpClient:
     def close(self):
         self.sock.close()
 
-    async def checking_data(self, dataStr, command, id_str):
-        resultedJson = {}
-        if 'No' in dataStr:
+    @staticmethod
+    async def checking_data(data_str, command, id_str):
+        resulted_json = {}
+        if 'No' in data_str:
             return {}
 
-        if 'saved' in dataStr:
+        if 'saved' in data_str:
             print(f'[SAVED] Data saved correctly using command : {command}, {id_str} ')
             return {}
 
         try:
-            resultedJson = json.loads(dataStr)
+            resulted_json = json.loads(data_str)
         except json.JSONDecodeError as e:
-            print('Error while decoding json data : ', dataStr, 'is not a valid json',
+            print('Error while decoding json data : ', data_str, 'is not a valid json',
                   'command:', command, 'id:', id_str, e.msg)
         finally:
-            return resultedJson
+            return resulted_json

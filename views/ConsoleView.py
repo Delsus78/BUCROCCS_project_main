@@ -8,7 +8,7 @@ class ConsoleView:
 
     @staticmethod
     def display_data(data):
-        print('[DATA]', data)
+        print('[DATA FROM SENSOR]', data)
         return data
 
     @staticmethod

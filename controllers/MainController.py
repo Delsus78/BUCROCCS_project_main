@@ -14,8 +14,8 @@ FARM2000_PUMP_INTERVAL = 10
 
 
 class MainController:
-    def __init__(self, server_ip, server_port):
-        self.model = ArduinoModel()
+    def __init__(self, server_ip, server_port, arduino_port='COM4'):
+        self.model = ArduinoModel(port=arduino_port)
         self.view = ConsoleView()
         self.configurationsCheckerService = ConfigurationsCheckerService()
         self.udp_client = UdpClient(server_ip, server_port)
@@ -76,17 +76,23 @@ class MainController:
 
             # MOISTURE
             moisture_val = udp_data[hour].get("MOISTURE")
-            if self.configurationsCheckerService.is_moistureValid(moisture_val, configs, self.model.pump_cache_state):
-                await self.start_pump(True)
-            else:
-                await self.start_pump(False)
+            pump_state = udp_data[hour].get("PUMPSTATE")
+            moisture_to_set = self.configurationsCheckerService.is_moistureValid(
+                moisture_val, configs, pump_state, self.model.is_pump_activable)
+            if moisture_to_set == 1:
+                await self.start_pump(True, configs)
+            elif moisture_to_set == -1:
+                await self.start_pump(False, configs)
 
             # LIGHT
             light_val = udp_data[hour].get("LIGHT")
-            if self.configurationsCheckerService.is_LightValid(light_val, configs):
-                await self.setLedInWhite()
-            else:
-                await self.setLedOff()
+            light_state = udp_data[hour].get("LIGHTSTATE")
+            light_to_set = self.configurationsCheckerService.is_LightValid(
+                light_val, configs, light_state)
+            if light_to_set == 1:
+                await self.set_light(True)
+            elif light_to_set == -1:
+                await self.set_light(False)
 
     def get_all_week_data(self):
         self.view.display_info("Getting all week data ...")
@@ -127,19 +133,23 @@ class MainController:
             print("[CONFIG] Error while retrieving data from UDP server, retrying...")
             return
 
-        if data and ('type' not in data.keys() or 'configuration' not in data.get('type')):
+        if data and ('type' not in data.keys() or 'configuration_1.1' not in data.get('type')):
             print("[CONFIG] Wrong data retrieved from UDP server, got : ", data, ", retrying...")
             return {}
 
         if not data:
             data = {
-                "type": "configuration",
+                "type": "configuration_1.1",
                 "moisture": {
                     "min": 30.0,
                     "stop": 40.0
                 },
                 "light": {
                     "min": 30.0,
+                },
+                "pump": {
+                    "open_time": 5,
+                    "interval": 60
                 }
             }
 
@@ -149,17 +159,17 @@ class MainController:
 
         return data
 
-    async def start_pump(self, start):
+    async def start_pump(self, start, configs):
+        pump_open_time = configs["pump"].get("open_time")
+        pump_interval_time = configs["pump"].get("interval")
+
+        await self.model.start_pump(start, pump_open_time, pump_interval_time)
+
         self.view.display_info("Starting pump ..." if start else "Stopping pump ...")
-        await self.model.start_pump(start, FARM2000_PUMP_OPEN_TIME, FARM2000_PUMP_INTERVAL)
 
-    async def setLedInWhite(self):
-        self.view.display_info("Setting LED in white ...")
-        await self.model.set_led_in_white()
-
-    async def setLedOff(self):
-        self.view.display_info("Turning LED off ...")
-        await self.model.set_led_off()
+    async def set_light(self, state):
+        self.view.display_info("Light is set to " + str(state) + " ...")
+        await self.model.set_light(state)
 
     def close(self):
         print("[CLOSING] Closing MainController...")

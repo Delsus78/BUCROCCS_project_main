@@ -38,10 +38,9 @@ def transform_data_to_match_client_interpretation(data):
         # data[i]['MOISTURE'] = str(100 - int((int(data[i]['MOISTURE']) - 300) * 100 / (1020 - 300)))
         moisture_val = data[i]['MOISTURE']
 
-        data[i]['MOISTURE'] = 127 + (0.431 * moisture_val) \
-                              + (-2.28 * pow(10, -3) * pow(moisture_val, 2)) \
-                              + (3.19 * pow(10, -6) * pow(moisture_val, 3)) \
-                              + (-1.45 * pow(10, -9) * pow(moisture_val, 4))
+        data[i]['MOISTURE'] = \
+            127 + (0.431 * moisture_val) + (-2.28 * pow(10, -3) * pow(moisture_val, 2)) \
+            + (3.19 * pow(10, -6) * pow(moisture_val, 3)) + (-1.45 * pow(10, -9) * pow(moisture_val, 4))
 
         if int(data[i]['MOISTURE']) < 0 or int(data[i]['MOISTURE']) > 100:
             data[i]['MOISTURE'] = 0

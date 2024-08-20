@@ -8,7 +8,8 @@ from services.jsonschemas.SensorListSchema import validate_sensor_list
 
 app = flask.Flask(__name__)
 swagger = Swagger(app)
-controller = MainController(server_ip='udpserver.bu.ac.th', server_port=5005)
+controller = MainController(
+    server_ip='udpserver.bu.ac.th', server_port=5005, arduino_port=sys.argv[2] if len(sys.argv) > 2 else 'COM4')
 
 
 @app.route('/')
@@ -89,11 +90,8 @@ def set_sensors():
     if valid is False:
         return 'Invalid sensor list : ' + error, 400
 
-    try:
-        controller.set_sensor_list(list_of_sensors)
-        return flask.jsonify(list_of_sensors)
-    except Exception as e:
-        return 'Error occured while setting sensors', 500
+    controller.set_sensor_list(list_of_sensors)
+    return flask.jsonify(list_of_sensors)
 
 
 @app.route('/api/udp/start', methods=['POST'])
@@ -146,8 +144,11 @@ def pump():
             description: Pump started
     """
     start = flask.request.json.get('start')
-    controller.start_pump(start)
-    return 'Pump started'
+    if controller.running:
+        configs = controller.get_configuration_data()
+        await controller.start_pump(start, configs)
+        return 'Pump started'
+    return 'Controller not started !'
 
 
 if __name__ == '__main__':
