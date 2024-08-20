@@ -49,8 +49,8 @@ def transform_data_to_match_client_interpretation(data):
         data[i]['LIGHT'] = float(data[i]['LIGHT'])
         data[i]['TEMPERATURE'] = float(data[i]['TEMPERATURE'])
         data[i]['HUMIDITY'] = float(data[i]['HUMIDITY'])
-        data[i]['PUMPSTATE'] = bool(data[i]['PUMPSTATE'])
-        data[i]['LIGHTSTATE'] = bool(data[i]['LIGHTSTATE'])
+        data[i]['PUMPSTATE'] = int(data[i]['PUMPSTATE']) == 1
+        data[i]['LIGHTSTATE'] = int(data[i]['LIGHTSTATE']) == 1
 
         # match with the actual hour as a key (i.e 12 : { 'MOISTURE': 100, 'LIGHT': 0 })
         response = {get_actual_hour(): data[i]}
