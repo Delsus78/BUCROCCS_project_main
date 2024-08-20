@@ -1,25 +1,8 @@
-import http.client
-from codecs import encode
+import requests
 
-conn = http.client.HTTPSConnection("10.232.0.10", 8000)
-dataList = []
-boundary = 'wL36Yn8afVp8Ag7AmP8qZ0SA4n1v9T'
-dataList.append(encode('--' + boundary))
-dataList.append(encode(
-    'Content-Disposition: form-data; name=username=oct1003&password=xbh914&accesscode1=DISABLE&anonymous=DISABLE&checkbox=on&checkbox1=on;'))
+url = "http://10.232.0.10:8000/login"
 
-dataList.append(encode('Content-Type: {}'.format('text/plain')))
-dataList.append(encode(''))
-
-dataList.append(encode(""))
-dataList.append(encode('--' + boundary + '--'))
-dataList.append(encode(''))
-body = b'\r\n'.join(dataList)
-payload = body
-headers = {
-    'Content-type': 'multipart/form-data; boundary={}'.format(boundary)
-}
-
+payload = {'username=oct1003&password=xbh914&accesscode1=DISABLE&anonymous=DISABLE&checkbox=on&checkbox1=on': ''}
 
 class AutoReconnectService:
     def __init__(self):
@@ -27,10 +10,9 @@ class AutoReconnectService:
 
     @staticmethod
     async def login():
-        conn.request("POST", "/login", payload, headers)
-        res = conn.getresponse()
+        response = requests.request("POST", url, data=payload, verify=False)
 
-        if res.status == 200:
+        if response.status == 200:
             print("succesfully logged in")
         else:
             print("failed to login, status code: ", res.status)
