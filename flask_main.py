@@ -10,30 +10,12 @@ from services.jsonschemas.SensorListSchema import validate_sensor_list
 
 app = flask.Flask(__name__)
 swagger = Swagger(app)
-#controller = MainController(server_ip='udpserver.bu.ac.th', server_port=5005, arduino_port=sys.argv[2] if len(sys.argv) > 2 else 'COM4')
-controller = MainController(server_ip='udpserver.bu.ac.th', server_port=5005, arduino_port=sys.argv[2] if len(sys.argv) > 2 else None)
+controller = MainController(server_ip='udpserver.bu.ac.th', server_port=5005, arduino_port=sys.argv[2] if len(sys.argv) > 2 else 'COM4')
+
 
 @app.route('/')
 def index():
     return controller.view.index()
-
-
-@app.route('/api/sensors/data', methods=['GET'])
-def get_sensors_data():
-    """
-    Get data from sensors stocked in the udp server
-    ---
-    tags:
-      - Sensors
-    responses:
-        200:
-            description: Data from sensors
-    """
-    data = controller.get_all_week_data()
-
-    if data:
-        return flask.jsonify(data)
-    return 'No data from Sensors, try again later'
 
 
 @app.route('/api/sensors', methods=['GET'])
@@ -163,7 +145,7 @@ def loginTointernet():
         200:
             description: Logged in
     """
-    asyncio.run(AutoReconnectService().login());
+    asyncio.run(AutoReconnectService().login())
     return 'Reconnected !'
 
 

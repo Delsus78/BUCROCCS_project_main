@@ -6,7 +6,7 @@ class ConfigurationsCheckerService:
     def is_moistureValid(moisture_value, configs, pump_state, is_pump_activable) -> int:
         if moisture_value <= configs["moisture"].get("min") and not pump_state and is_pump_activable:
             return 1
-        elif moisture_value >= configs["moisture"].get("stop") and pump_state:
+        elif moisture_value >= configs["moisture"].get("max") and pump_state:
             return -1
         else:
             return 0

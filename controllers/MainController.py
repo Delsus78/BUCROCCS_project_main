@@ -4,14 +4,12 @@ from models.ArduinoModel import ArduinoModel
 from services.ArduinoHelpers import transform_data_to_match_client_interpretation
 from services.AutoReconnectService import AutoReconnectService
 from services.ConfigurationsCheckerService import ConfigurationsCheckerService
-from services.TimeHelpers import get_actual_hour, get_actual_day, get_actual_day_from_int
+from services.TimeHelpers import get_actual_hour, get_actual_day
 from views.ConsoleView import ConsoleView
 from services.UdpClient import UdpClient
 
 FARM2000_SENSOR_LIST = "farm2000_sensor_list"
 FARM2000_CONFIGURATION = "farm2000_configs"
-FARM2000_PUMP_OPEN_TIME = 3
-FARM2000_PUMP_INTERVAL = 10
 
 
 class MainController:
@@ -27,9 +25,10 @@ class MainController:
 
     def start(self):
         self.view.display_info("Starting MainController...")
-        # Start the main loop in a non-blocking way
+
         self.loop.run_until_complete(self.main())
-        print("MainController stopped")
+
+        self.view.display_info("MainController stopped")
 
     def stop(self):
         self.view.display_info("Stopping MainController...")
@@ -39,8 +38,10 @@ class MainController:
         while self.running:
             self.view.display_info("[CONFIG] Checking parameters ...")
             await self.check_configuration_periodically()
+
             self.view.display_info("[DATA] Actualising data ...")
             await self.send_data_periodically()
+
             await asyncio.sleep(3)
 
     async def send_data_periodically(self):
@@ -48,12 +49,7 @@ class MainController:
         if data:
             data_transformed = transform_data_to_match_client_interpretation(data)
             id_str = f"farm2000_" + str(get_actual_day())
-            actual_udp_data = await self.get_udp_server_data_of_the_day()
-
-            if 'Error' in actual_udp_data.keys():
-                print("[ERROR] Error while retrieving data from UDP server, reconnection to internet...")
-                await self.autoReconnectService.login()
-                return
+            actual_udp_data = await self.retrieve_udp_data(f"farm2000_{get_actual_day()}")
 
             if get_actual_hour() in actual_udp_data:
                 actual_udp_data[get_actual_hour()] = {
@@ -63,8 +59,7 @@ class MainController:
                 actual_udp_data = {**actual_udp_data, **data_transformed}
 
             final_data_of_the_day = actual_udp_data
-            await self.udp_client.retrieve_data(
-                command="SET", id_str=id_str, json_data=final_data_of_the_day, view=self.view)
+            await self.retrieve_udp_data(id_str, command="SET", json_data=final_data_of_the_day)
         else:
             self.view.display_info("No data retrieved from sensors, Skipping ...")
 
@@ -74,7 +69,7 @@ class MainController:
             return
 
         hour = get_actual_hour()
-        udp_data = await self.get_udp_server_data_of_the_day()
+        udp_data = await self.retrieve_udp_data(f"farm2000_{get_actual_day()}")
 
         if hour in udp_data:
 
@@ -98,25 +93,13 @@ class MainController:
             elif light_to_set == -1:
                 await self.set_light(False)
 
-    def get_all_week_data(self):
-        self.view.display_info("Getting all week data ...")
-        all_week_data = []
-        for i in range(7):
-            day = get_actual_day_from_int(i)
-            data = self.udp_client.retrieve_data(command="GET", id_str=f"farm2000_{day}")
-            # map the data to the day
-            all_week_data.append({day: data})
-
-        return all_week_data
-
     def set_sensor_list(self, list_of_sensors):
         self.view.display_info("Setting sensors ...")
-        self.udp_client.retrieve_data(command="SET", id_str=FARM2000_SENSOR_LIST, json_data=list_of_sensors,
-                                      view=self.view)
+        self.retrieve_udp_data(FARM2000_SENSOR_LIST, command="SET", json_data=list_of_sensors)
 
     def get_sensor_list(self):
         self.view.display_info("Getting sensors ...")
-        data = self.udp_client.retrieve_data(command="GET", id_str=FARM2000_SENSOR_LIST)
+        data = self.retrieve_udp_data(FARM2000_SENSOR_LIST)
         return data
 
     def get_data_from_sensors(self):
@@ -126,28 +109,35 @@ class MainController:
             return data
         return None
 
-    async def get_udp_server_data_of_the_day(self):
-        data = await self.udp_client.retrieve_data(command="GET", id_str=f"farm2000_{get_actual_day()}", view=self.view)
+    async def retrieve_udp_data(self, id_str, command="GET", json_data=None):
+        retry_needed = True
+        data = None
+
+        while retry_needed:
+            data = await self.udp_client.retrieve_data(
+                command=command, id_str=id_str, view=self.view, json_data=json_data)
+
+            if 'Error' in data.keys():
+                print("[ERROR] Error while retrieving data from UDP server, reconnection to internet...")
+                await self.autoReconnectService.login()
+            elif data:
+                retry_needed = False
+
         return data
 
     async def get_configuration_data(self):
-        data = await self.udp_client.retrieve_data(command="GET", id_str=FARM2000_CONFIGURATION, view=self.view)
+        data = await self.retrieve_udp_data(FARM2000_CONFIGURATION)
 
-        if 'Error' in data.keys():
-            print("[CONFIG] Error while retrieving data from UDP server, reconnection to internet...")
-            await self.autoReconnectService.login()
-            return
-
-        if data and ('type' not in data.keys() or 'configuration_1.1' not in data.get('type')):
+        if data and ('type' not in data.keys() or 'configuration_1.2' not in data.get('type')):
             print("[CONFIG] Wrong data retrieved from UDP server, got : ", data, ", retrying...")
             data = None
 
         if not data:
             data = {
-                "type": "configuration_1.1",
+                "type": "configuration_1.2",
                 "moisture": {
                     "min": 30.0,
-                    "stop": 40.0
+                    "max": 40.0
                 },
                 "light": {
                     "min": 30.0,
@@ -159,8 +149,7 @@ class MainController:
             }
 
             print("[CONFIG] creating new config file...")
-            await self.udp_client.retrieve_data(command="SET", id_str=FARM2000_CONFIGURATION, json_data=data,
-                                                view=self.view)
+            await self.retrieve_udp_data(command="SET", id_str=FARM2000_CONFIGURATION, json_data=data)
 
         return data
 
