@@ -1,3 +1,5 @@
+import asyncio
+
 import requests
 from requests.exceptions import ConnectionError
 
@@ -28,14 +30,22 @@ class AutoReconnectService:
 
     @staticmethod
     async def login():
-        try:
-            response = requests.post(url, data=payload, headers=headers, verify=False)
+        max_try = 20
+        while max_try > 0:
+            max_try -= 1
+            try:
+                response = requests.post(url, data=payload, headers=headers, verify=False, timeout=5)
 
-            if response.status_code == 200:
-                print("Successfully logged in")
-            else:
-                print("Failed to login, status code:", response.status_code)
-        except ConnectionError as e:
-            print("Connection error:", e)
-        except Exception as e:
-            print("An error occurred:", e)
+                if response.status_code == 200:
+                    print("Successfully logged in")
+                    return
+
+                raise Exception("Failed to login, status code:", response.status_code)
+
+            except Exception as e:
+                print("An error occurred:", e)
+
+            if max_try == 0:
+                print("Failed to login after multiple attempts")
+
+                await asyncio.sleep(0.1)
