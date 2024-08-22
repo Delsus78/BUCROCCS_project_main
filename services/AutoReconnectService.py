@@ -25,11 +25,10 @@ headers = {
 
 
 class AutoReconnectService:
-    def __init__(self):
-        pass
+    def __init__(self, controller):
+        self.controller = controller
 
-    @staticmethod
-    async def login():
+    async def login(self):
         max_try = 20
         while max_try > 0:
             max_try -= 1
@@ -49,3 +48,5 @@ class AutoReconnectService:
                 print("Failed to login after multiple attempts")
 
                 await asyncio.sleep(0.1)
+
+                self.controller.stop()

@@ -18,7 +18,7 @@ class MainController:
             self.model = ArduinoModel(port=arduino_port)
         self.view = ConsoleView()
         self.configurationsCheckerService = ConfigurationsCheckerService()
-        self.autoReconnectService = AutoReconnectService()
+        self.autoReconnectService = AutoReconnectService(self)
         self.udp_client = UdpClient(server_ip, server_port)
         self.loop = asyncio.get_event_loop()
         self.running = True
