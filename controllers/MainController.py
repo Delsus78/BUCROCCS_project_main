@@ -120,8 +120,9 @@ class MainController:
             if 'Error' in data.keys():
                 print("[ERROR] Error while retrieving data from UDP server, reconnection to internet...")
                 await self.autoReconnectService.login()
-            elif data:
+            elif data is not None:
                 retry_needed = False
+            print(data)
 
         return data
 
