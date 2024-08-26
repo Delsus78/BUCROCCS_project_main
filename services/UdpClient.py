@@ -40,7 +40,7 @@ class UdpClient:
 
             # retrieve data
             max_try = 20
-            timeout = 5  # seconds
+            timeout = 10  # seconds
             while max_try > 0:
                 try:
                     data = await asyncio.wait_for(self.loop.sock_recv(self.sock, 2048), timeout)
