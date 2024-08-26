@@ -1,7 +1,4 @@
-import asyncio
-
 import requests
-from requests.exceptions import ConnectionError
 
 url = "http://10.232.0.10:8000/login"
 
@@ -29,9 +26,7 @@ class AutoReconnectService:
         self.controller = controller
 
     async def login(self):
-        max_try = 20
-        while max_try > 0:
-            max_try -= 1
+        while True:
             try:
                 response = requests.post(url, data=payload, headers=headers, verify=False, timeout=5)
 
@@ -44,9 +39,3 @@ class AutoReconnectService:
             except Exception as e:
                 print("An error occurred:", e)
 
-            if max_try == 0:
-                print("Failed to login after multiple attempts")
-
-                await asyncio.sleep(0.1)
-
-                self.controller.stop()

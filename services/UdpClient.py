@@ -8,22 +8,35 @@ class UdpClient:
         self.server_ip = server_ip
         self.server_port = server_port
         self.loop = asyncio.get_event_loop()
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setblocking(False)  # Make the socket non-blocking
+        self.init_socket()
         self.lock = asyncio.Lock()  # Create a lock
+
+    def init_socket(self):
+        try:
+            self.sock.close()
+        except Exception:
+            pass
+        finally:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.sock.setblocking(False)
 
     async def retrieve_data(self, command, id_str, json_data=None, view=None):
         async with self.lock:
+            while True:
+                try:
+                    # sending
+                    message = f"{command},{id_str}"
+                    if json_data:
+                        message += f",{json.dumps(json_data)}"
 
-            # sending
-            message = f"{command},{id_str}"
-            if json_data:
-                message += f",{json.dumps(json_data)}"
+                    if view:
+                        view.send_message_to_udpserver(message)
 
-            if view:
-                view.send_message_to_udpserver(message)
-
-            self.sock.sendto(message.encode('utf-8'), (self.server_ip, self.server_port))
+                    self.sock.sendto(message.encode('utf-8'), (self.server_ip, self.server_port))
+                    break
+                except Exception as e:
+                    print(f"[ERROR] Error while sending data to server: {e}")
+                    self.init_socket()
 
             # retrieve data
             max_try = 20

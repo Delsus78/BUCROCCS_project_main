@@ -44,13 +44,16 @@ def transform_data_to_match_client_interpretation(data):
         if int(data[i]['MOISTURE']) < 0 or int(data[i]['MOISTURE']) > 100:
             data[i]['MOISTURE'] = 0
 
-        # transform to float the values
+        # transform to number the values
         data[i]['MOISTURE'] = float(data[i]['MOISTURE'])
         data[i]['LIGHT'] = float(data[i]['LIGHT'])
         data[i]['TEMPERATURE'] = float(data[i]['TEMPERATURE'])
         data[i]['HUMIDITY'] = float(data[i]['HUMIDITY'])
         data[i]['PUMPSTATE'] = int(data[i]['PUMPSTATE']) == 1
         data[i]['LIGHTSTATE'] = int(data[i]['LIGHTSTATE']) == 1
+
+        # set activatedInThisHour flag to true if pump is active
+        data[i]['PUMPWASACTIVATEDTHISHOUR'] = data[i]['PUMPSTATE']
 
         # match with the actual hour as a key (i.e 12 : { 'MOISTURE': 100, 'LIGHT': 0 })
         response = {get_actual_hour(): data[i]}

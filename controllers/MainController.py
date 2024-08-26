@@ -52,6 +52,11 @@ class MainController:
             actual_udp_data = await self.retrieve_udp_data(f"farm2000_{get_actual_day()}")
 
             if get_actual_hour() in actual_udp_data:
+                # continue the PUMPWASACTIVATEDTHISHOUR
+                if 'PUMPWASACTIVATEDTHISHOUR' in actual_udp_data[get_actual_hour()] \
+                        and actual_udp_data[get_actual_hour()]['PUMPWASACTIVATEDTHISHOUR']:
+                    data_transformed[get_actual_hour()]['PUMPWASACTIVATEDTHISHOUR'] = True
+
                 actual_udp_data[get_actual_hour()] = {
                     **actual_udp_data[get_actual_hour()], **data_transformed[get_actual_hour()]
                 }
@@ -129,19 +134,19 @@ class MainController:
     async def get_configuration_data(self):
         data = await self.retrieve_udp_data(FARM2000_CONFIGURATION)
 
-        if data and ('type' not in data.keys() or 'configuration_1.2' not in data.get('type')):
+        if data and ('type' not in data.keys() or 'configuration_1.3' not in data.get('type')):
             print("[CONFIG] Wrong data retrieved from UDP server, got : ", data, ", retrying...")
             data = None
 
         if not data:
             data = {
-                "type": "configuration_1.2",
+                "type": "configuration_1.3",
                 "moisture": {
-                    "min": 30.0,
-                    "max": 40.0
+                    "min": 30,
+                    "max": 40
                 },
                 "light": {
-                    "min": 30.0,
+                    "min": 30,
                 },
                 "pump": {
                     "open_time": 5,
