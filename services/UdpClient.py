@@ -43,7 +43,7 @@ class UdpClient:
             timeout = 10  # seconds
             while max_try > 0:
                 try:
-                    data = await asyncio.wait_for(self.loop.sock_recv(self.sock, 2048), timeout)
+                    data = await asyncio.wait_for(self.loop.sock_recv(self.sock, 16384), timeout)
                     data_str = data.decode('utf-8')
 
                     if view:

@@ -1,3 +1,5 @@
+import asyncio
+
 import requests
 
 url = "http://10.232.0.10:8000/login"
@@ -38,4 +40,4 @@ class AutoReconnectService:
 
             except Exception as e:
                 print("An error occurred:", e)
-
+            await asyncio.sleep(3)

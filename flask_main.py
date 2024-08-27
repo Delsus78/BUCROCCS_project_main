@@ -11,6 +11,7 @@ from services.jsonschemas.SensorListSchema import validate_sensor_list
 app = flask.Flask(__name__)
 swagger = Swagger(app)
 controller = MainController(server_ip='udpserver.bu.ac.th', server_port=5005, arduino_port=sys.argv[2] if len(sys.argv) > 2 else 'COM4')
+#controller = MainController(server_ip='udpserver.bu.ac.th', server_port=5005)
 
 
 @app.route('/')
@@ -105,6 +106,36 @@ def stop_udp():
     """
     controller.stop()
     return 'UDP server stopped'
+
+
+@app.route('/api/udp/send', methods=['POST'])
+def send_udp():
+    """
+    Send Data to UDP server
+    ---
+    tags:
+      - UDP
+    parameters:
+      - in: body
+        name: body
+        schema:
+            type: object
+            properties:
+                id:
+                    type: string
+                data:
+                    type: object
+    responses:
+        200:
+            description: Data sent
+    """
+
+    controller.retrieve_udp_data(
+        command='SET',
+        id_str=flask.request.json.get('id'),
+        json_data=flask.request.json.get('data')).close()
+
+    return 'Data sent'
 
 
 @app.route('/api/arduino/pump', methods=['POST'])
