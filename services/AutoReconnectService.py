@@ -2,7 +2,7 @@ import asyncio
 
 import requests
 
-url = "http://10.232.0.10:8000/login"
+url = "http://10.232.0.10:50100/login"
 
 payload = {
     'username': 'oct1003',
@@ -16,8 +16,8 @@ payload = {
 headers = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'Connection': 'keep-alive',
-    'Origin': 'http://10.232.0.10:8000',
-    'Referer': 'http://10.232.0.10:8000/login.html',
+    'Origin': 'http://10.232.0.10:50100/',
+    'Referer': 'http://10.232.0.10:50100/login.html',
     'Upgrade-Insecure-Requests': '1',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
 }

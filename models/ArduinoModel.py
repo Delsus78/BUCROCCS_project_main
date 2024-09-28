@@ -10,7 +10,6 @@ class ArduinoModel:
     def __init__(self, port='COM4', baudrate=115200, timeout=1):
         self.serial_monitor = serial.Serial(port, baudrate, timeout=timeout)
         self.is_pump_activable = True
-        self.lock = asyncio.Lock()
         time.sleep(2)  # Wait for the serial connection to initialize
 
     def set_pump_activable(self, value):
@@ -45,6 +44,5 @@ class ArduinoModel:
         await self.writeInSerial(message)
 
     async def writeInSerial(self, message):
-        async with self.lock:
-            self.serial_monitor.write(message.encode())
-            await asyncio.sleep(1.5)
+        self.serial_monitor.write(message.encode())
+        await asyncio.sleep(1)
